@@ -1,654 +1,194 @@
 import React, { useState } from 'react';
+import './App.css'; // Puoi personalizzare meglio lo stile qui se vuoi
 
-const DURATION_RATES = {
-  3: 9,
-  5: 12,
-  8: 13,
-  10: 14,
-  12: 15,
-  15: 16,
+// STILE inline per il tasto RESET rosso chiaro, in alto a destra
+const resetButtonStyle = {
+  backgroundColor: '#ffcccc',
+  color: '#a40000',
+  border: 'none',
+  borderRadius: '6px',
+  padding: '8px 16px',
+  fontWeight: 'bold',
+  position: 'absolute',
+  right: '24px',
+  top: '24px',
+  cursor: 'pointer',
+  boxShadow: '0 2px 8px #ccc'
 };
 
-const MIN_CAPITAL = 5000;
+function CalcolatoreMultiContratto() {
+  // Portafoglio di contratti attivi
+  const [contratti, setContratti] = useState([]);
 
-export default function ProfessionalGoldCalculator() {
-  const [contracts, setContracts] = useState([]);
-  const [nextId, setNextId] = useState(1);
-  const [formData, setFormData] = useState({ capital: '', duration: '' });
-  const [errors, setErrors] = useState({});
-  const [simulationYear, setSimulationYear] = useState(0);
-  const [portfolioRendites, setPortfolioRendites] = useState(0);
+  // Stato temporaneo per creare nuovo contratto
+  const [nuovoCapitale, setNuovoCapitale] = useState('');
+  const [anni, setAnni] = useState('');
+  const [rendimento, setRendimento] = useState('');
 
-  // Colori professionali: Navy Blue + Gold + White
-  const colors = {
-    navy: '#1e3a8a',
-    gold: '#d4af37',
-    white: '#ffffff',
-    lightGray: '#f8fafc',
-    darkGray: '#64748b',
-    success: '#059669',
-    danger: '#dc2626'
-  };
+  // Calcola le rendite totali maturate (sommando tutte le rendite realizzate dai contratti chiusi)
+  const totaleRendite = contratti.reduce(
+    (acc, c) => acc + (c.capitale * (c.rendimento / 100) * c.anni), 0
+  );
 
-  const calculateAnnualReturn = (capital, rate) => {
-    return Math.round((capital * rate) / 100);
-  };
+  // Calcola il capitale totale investito (dei contratti ancora ATTIVI)
+  const capitaleInvestito = contratti.reduce(
+    (acc, c) => acc + Number(c.capitale), 0
+  );
 
-  const validateForm = () => {
-    const newErrors = {};
-    const capitalNum = parseInt(formData.capital, 10) || 0;
-    const isFirstContract = contracts.length === 0;
+  // Calcola il totale che può essere usato per nuovi contratti (rendite maturate)
+  const massimoPerNuovoContratto = totaleRendite; // o si può adattare secondo altri criteri
 
-    if (!formData.capital || isNaN(capitalNum) || capitalNum < MIN_CAPITAL) {
-      newErrors.capital = `Il capitale minimo è ${MIN_CAPITAL.toLocaleString()}€`;
-    } else if (!isFirstContract && capitalNum > portfolioRendites) {
-      newErrors.capital = `Fondi insufficienti. Disponibili: ${portfolioRendites.toLocaleString()}€`;
-    }
+  // Calcola il totale che torna al cliente (rendite + capitale restituito)
+  const totaleTornaCliente = contratti.reduce((tot, c) => {
+    // Rendita maturata per contratto + capitale restituito a fine contratto
+    return tot + (c.capitale * (c.rendimento / 100) * c.anni) + Number(c.capitale);
+  }, 0);
 
-    if (!formData.duration) {
-      newErrors.duration = 'Seleziona una durata';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const createContract = (e) => {
+  // Aggiunge un nuovo contratto al portafoglio
+  const aggiungiContratto = e => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    const capital = parseInt(formData.capital, 10);
-    const duration = parseInt(formData.duration, 10);
-    const ricavo = DURATION_RATES[duration];
-    const isFirstContract = contracts.length === 0;
-
-    if (!isFirstContract) {
-      setPortfolioRendites((prev) => prev - capital);
-    }
-
-    const newContract = {
-      id: nextId,
-      capital,
-      duration,
-      ricavo,
-      anniTrascorsi: 0,
-      renditaAnnuale: calculateAnnualReturn(capital, ricavo),
-      ricaviTotali: 0,
-      stato: 'Attivo',
-    };
-
-    setContracts((prev) => [...prev, newContract]);
-    setNextId((prev) => prev + 1);
-    setFormData({ capital: '', duration: '' });
-    setErrors({});
-  };
-
-  const simulateNextYear = () => {
-    let accumulatedRenditesThisYear = 0;
-
-    const updatedContracts = contracts.map((contract) => {
-      if (contract.stato === 'Completato') {
-        return contract;
+    if (!nuovoCapitale || !anni || !rendimento) return;
+    setContratti([
+      ...contratti, 
+      {
+        capitale: Number(nuovoCapitale),
+        anni: Number(anni),
+        rendimento: Number(rendimento)
       }
-
-      const newAnniTrascorsi = contract.anniTrascorsi + 1;
-      const newStatus = newAnniTrascorsi >= contract.duration ? 'Completato' : 'Attivo';
-
-      accumulatedRenditesThisYear += contract.renditaAnnuale;
-
-      return {
-        ...contract,
-        anniTrascorsi: newAnniTrascorsi,
-        ricaviTotali: contract.ricaviTotali + contract.renditaAnnuale,
-        stato: newStatus,
-      };
-    });
-
-    setContracts(updatedContracts);
-    setPortfolioRendites((prev) => prev + accumulatedRenditesThisYear);
-    setSimulationYear((prev) => prev + 1);
+    ]);
+    setNuovoCapitale('');
+    setAnni('');
+    setRendimento('');
   };
 
+  // Gestione RESET (azzera tutto)
   const resetAll = () => {
-    setContracts([]);
-    setNextId(1);
-    setFormData({ capital: '', duration: '' });
-    setErrors({});
-    setSimulationYear(0);
-    setPortfolioRendites(0);
+    setContratti([]);
+    setNuovoCapitale('');
+    setAnni('');
+    setRendimento('');
   };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const isFirstContract = contracts.length === 0;
-  const canCreateSubsequentContract = !isFirstContract && portfolioRendites >= MIN_CAPITAL;
-  
-  // CAPITALE INIZIALE = Solo il primo deposito (primo contratto)
-  const capitaleIniziale = contracts.length > 0 ? contracts[0].capital : 0;
-  
-  // RICAVI TOTALI = Tutti i ricavi accumulati
-  const ricaviTotali = contracts.reduce((sum, c) => sum + c.ricaviTotali, 0);
-  
-  const activeContracts = contracts.filter(c => c.stato === 'Attivo').length;
-  const completedContracts = contracts.filter(c => c.stato === 'Completato').length;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: colors.navy,
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-    }}>
-      {/* Header */}
-      <div style={{
-        backgroundColor: colors.navy,
-        padding: '40px 20px',
-        textAlign: 'center',
-        borderBottom: `4px solid ${colors.gold}`
-      }}>
-        <h1 style={{
-          color: colors.white,
-          fontSize: '2.5rem',
-          fontWeight: '700',
-          margin: '0 0 12px 0',
-          letterSpacing: '-0.5px'
-        }}>
-          GOLD INVESTMENT CALCULATOR
-        </h1>
-        <p style={{
-          color: colors.gold,
-          fontSize: '1.1rem',
-          margin: '0',
-          fontWeight: '500'
-        }}>
-          Simulazione professionale di investimenti in oro • Anno {simulationYear}
-        </p>
+    <div style={{ position: 'relative', padding: '32px', maxWidth: '600px', margin: 'auto', background: '#fafbfc', borderRadius: '16px', boxShadow: '0 3px 24px #eee' }}>
+      {/* TITOLO */}
+      <h1 style={{ textAlign: 'center', marginBottom: 4 }}>Calcolatore Multi Contratto</h1>
+      <p style={{ textAlign: 'center', color: '#666', fontSize: '15px', marginTop: 0 }}>
+        Simula più contratti con rendite e capitale restituito.
+      </p>
+      
+      {/* PULSANTE RESET in alto a destra */}
+      <button style={resetButtonStyle} onClick={resetAll}>
+        RESET
+      </button>
+      
+      {/* Portfolio attuale */}
+      <div style={{ marginTop: 40, marginBottom: 32, background: '#f2f9f9', padding: 18, borderRadius: 10, border: '1px solid #ddeeff' }}>
+        <h3>Contratti Attivi</h3>
+        {contratti.length === 0 && (
+          <div style={{ color: '#bbb', margin: '12px 0' }}>Nessun contratto attivo</div>
+        )}
+        {contratti.length > 0 && (
+          <table style={{ width: '100%', fontSize: 15, marginTop: 4 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Capitale</th>
+                <th>Anni</th>
+                <th>Rendimento (%)</th>
+                <th>Rendita (€)</th>
+                <th>Totale finale (€)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contratti.map((c, i) => (
+                <tr key={i}>
+                  <td>{c.capitale.toLocaleString('it-IT')} €</td>
+                  <td>{c.anni}</td>
+                  <td>{c.rendimento}</td>
+                  <td>
+                    {/* Rendita per questo contratto */}
+                    {(c.capitale * (c.rendimento/100) * c.anni).toLocaleString('it-IT', { maximumFractionDigits: 0 })} €
+                  </td>
+                  <td>
+                    {/* Rendita finale + capitale restituito */}
+                    {(c.capitale + c.capitale * (c.rendimento/100) * c.anni).toLocaleString('it-IT', { maximumFractionDigits: 0 })} €
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div> 
+
+      {/* SEZIONE NUOVO CONTRATTO */}
+      <form onSubmit={aggiungiContratto} style={{ background: '#eef4ff', padding: 22, borderRadius: 12, boxShadow: '0 2px 8px #f0f6ff' }}>
+        <h3>Nuovo contratto</h3>
+        <div style={{ marginBottom: 12 }}>
+          <label>
+            Capitale <span style={{ color: '#666', fontSize: 13 }}>(max: {massimoPerNuovoContratto.toLocaleString('it-IT')} €)</span>
+            <input
+              type="number"
+              value={nuovoCapitale}
+              min={0}
+              max={massimoPerNuovoContratto || ''}
+              onChange={e => setNuovoCapitale(e.target.value)}
+              placeholder={massimoPerNuovoContratto ? `${massimoPerNuovoContratto.toLocaleString('it-IT')} € disponibili` : '€'}
+              style={{ marginLeft: 12, width: 180 }}
+            />
+          </label>
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label>
+            Anni
+            <input
+              type="number"
+              value={anni}
+              min={1}
+              onChange={e => setAnni(e.target.value)}
+              style={{ marginLeft: 12, width: 80 }}
+            />
+          </label>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label>
+            Rendimento %
+            <input
+              type="number"
+              value={rendimento}
+              min={0}
+              step={0.01}
+              onChange={e => setRendimento(e.target.value)}
+              style={{ marginLeft: 12, width: 80 }}
+            />
+          </label>
+        </div>
+        <button type="submit" style={{ padding: '6px 24px', background: '#347cf0', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', marginTop: 8 }}>
+          AGGIUNGI CONTRATTO
+        </button>
+      </form>
+
+      {/* AREA RIEPILOGATIVA CALCOLI */}
+      <div style={{ marginTop: 32, padding: 18, background: '#fcfcf4', borderRadius: 10, border: '1px solid #f5e6d0' }}>
+        <h4>Riepilogo</h4>
+        <div><strong>Totale ricavi (rendite):</strong> {totaleRendite.toLocaleString('it-IT', { maximumFractionDigits: 2 })} €</div>
+        <div style={{ marginTop: 4 }}>
+          <strong>Totale che torna al cliente (rendite + capitale a fine contratti):</strong> {totaleTornaCliente.toLocaleString('it-IT', { maximumFractionDigits: 2 })} €
+        </div>
       </div>
 
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '40px 20px'
-      }}>
-        {/* Dashboard principale */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '30px',
-          marginBottom: '50px'
-        }}>
-          {/* Capitale Iniziale - Solo primo deposito */}
-          <div style={{
-            backgroundColor: colors.white,
-            borderRadius: '12px',
-            padding: '30px',
-            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-            border: `2px solid ${colors.lightGray}`,
-            textAlign: 'center'
-          }}>
-            <h3 style={{
-              color: colors.darkGray,
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              margin: '0 0 16px 0'
-            }}>
-              CAPITALE INIZIALE
-            </h3>
-            <div style={{
-              fontSize: '2.2rem',
-              fontWeight: '700',
-              color: colors.navy,
-              margin: '0'
-            }}>
-              {formatCurrency(capitaleIniziale)}
-            </div>
-            <p style={{
-              color: colors.darkGray,
-              fontSize: '0.85rem',
-              margin: '8px 0 0 0',
-              fontWeight: '500'
-            }}>
-              Il tuo primo investimento
-            </p>
-          </div>
-
-          {/* RICAVI TOTALI - Focus principale */}
-          <div style={{
-            backgroundColor: colors.gold,
-            borderRadius: '12px',
-            padding: '30px',
-            boxShadow: '0 12px 35px rgba(212,175,55,0.3)',
-            textAlign: 'center',
-            transform: 'scale(1.02)',
-            border: `3px solid ${colors.gold}`
-          }}>
-            <h3 style={{
-              color: colors.white,
-              fontSize: '0.9rem',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              margin: '0 0 16px 0'
-            }}>
-              💰 RICAVI TOTALI
-            </h3>
-            <div style={{
-              fontSize: '2.8rem',
-              fontWeight: '800',
-              color: colors.white,
-              margin: '0',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
-            }}>
-              {formatCurrency(ricaviTotali)}
-            </div>
-            <p style={{
-              color: colors.white,
-              fontSize: '0.9rem',
-              margin: '8px 0 0 0',
-              fontWeight: '600',
-              opacity: 0.9
-            }}>
-              Il tuo guadagno totale
-            </p>
-          </div>
-
-          {/* Contratti Attivi */}
-          <div style={{
-            backgroundColor: colors.white,
-            borderRadius: '12px',
-            padding: '30px',
-            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-            border: `2px solid ${colors.lightGray}`,
-            textAlign: 'center'
-          }}>
-            <h3 style={{
-              color: colors.darkGray,
-              fontSize: '0.9rem',
-              fontWeight: '600',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              margin: '0 0 16px 0'
-            }}>
-              CONTRATTI IN ESSERE
-            </h3>
-            <div style={{
-              fontSize: '2.2rem',
-              fontWeight: '700',
-              color: colors.success,
-              margin: '0 0 12px 0'
-            }}>
-              {contracts.length}
-            </div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '0.85rem',
-              fontWeight: '600'
-            }}>
-              <span style={{ color: colors.success }}>
-                {activeContracts} Attivi
-              </span>
-              <span style={{ color: colors.gold }}>
-                {completedContracts} Completati
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Controlli simulazione */}
-        <div style={{
-          backgroundColor: colors.white,
-          borderRadius: '12px',
-          padding: '30px',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-          marginBottom: '40px',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '20px',
-            flexWrap: 'wrap'
-          }}>
-            <button
-              onClick={simulateNextYear}
-              disabled={contracts.length === 0}
-              style={{
-                backgroundColor: contracts.length > 0 ? colors.gold : colors.darkGray,
-                color: colors.white,
-                border: 'none',
-                borderRadius: '8px',
-                padding: '15px 30px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: contracts.length > 0 ? 'pointer' : 'not-allowed',
-                opacity: contracts.length > 0 ? 1 : 0.6,
-                transition: 'all 0.2s ease'
-              }}
-            >
-              ▶ Simula Anno Successivo
-            </button>
-            
-            <button
-              onClick={resetAll}
-              style={{
-                backgroundColor: colors.danger,
-                color: colors.white,
-                border: 'none',
-                borderRadius: '8px',
-                padding: '15px 30px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              🔄 Reset Totale
-            </button>
-          </div>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '400px 1fr',
-          gap: '40px',
-          alignItems: 'start'
-        }}>
-          {/* Form creazione contratto */}
-          <div style={{
-            backgroundColor: colors.white,
-            borderRadius: '12px',
-            padding: '30px',
-            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-            position: 'sticky',
-            top: '20px'
-          }}>
-            <h2 style={{
-              color: colors.navy,
-              fontSize: '1.4rem',
-              fontWeight: '700',
-              margin: '0 0 30px 0',
-              textAlign: 'center'
-            }}>
-              {isFirstContract ? 'PRIMO CONTRATTO' : 'NUOVO CONTRATTO'}
-            </h2>
-
-            <form onSubmit={createContract}>
-              <div style={{ marginBottom: '25px' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  color: colors.navy,
-                  fontWeight: '600',
-                  fontSize: '0.9rem'
-                }}>
-                  CAPITALE (€)
-                </label>
-                <input
-                  type="number"
-                  min={MIN_CAPITAL}
-                  step="1000"
-                  placeholder={`Min. ${MIN_CAPITAL.toLocaleString()}€`}
-                  value={formData.capital}
-                  onChange={(e) => setFormData({ ...formData, capital: e.target.value })}
-                  disabled={!isFirstContract && !canCreateSubsequentContract}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: `2px solid ${errors.capital ? colors.danger : colors.lightGray}`,
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    backgroundColor: colors.lightGray,
-                    color: colors.navy,
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                {errors.capital && (
-                  <p style={{
-                    color: colors.danger,
-                    fontSize: '0.8rem',
-                    margin: '5px 0 0 0',
-                    fontWeight: '500'
-                  }}>
-                    {errors.capital}
-                  </p>
-                )}
-              </div>
-
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '12px',
-                  color: colors.navy,
-                  fontWeight: '600',
-                  fontSize: '0.9rem'
-                }}>
-                  DURATA E RENDIMENTO
-                </label>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '10px'
-                }}>
-                  {Object.entries(DURATION_RATES).map(([years, rate]) => (
-                    <div
-                      key={years}
-                      onClick={() => setFormData(prev => ({ ...prev, duration: years }))}
-                      style={{
-                        padding: '15px 10px',
-                        borderRadius: '8px',
-                        border: `2px solid ${formData.duration === years ? colors.gold : colors.lightGray}`,
-                        backgroundColor: formData.duration === years ? colors.gold : colors.white,
-                        color: formData.duration === years ? colors.white : colors.navy,
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.2s ease',
-                        fontWeight: '600'
-                      }}
-                    >
-                      <div style={{ fontSize: '1rem', marginBottom: '4px' }}>
-                        {years} anni
-                      </div>
-                      <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
-                        {rate}% annuo
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {errors.duration && (
-                  <p style={{
-                    color: colors.danger,
-                    fontSize: '0.8rem',
-                    margin: '8px 0 0 0',
-                    fontWeight: '500'
-                  }}>
-                    {errors.duration}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={!isFirstContract && !canCreateSubsequentContract}
-                style={{
-                  width: '100%',
-                  padding: '15px',
-                  backgroundColor: (isFirstContract || canCreateSubsequentContract) ? colors.navy : colors.darkGray,
-                  color: colors.white,
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: '700',
-                  cursor: (isFirstContract || canCreateSubsequentContract) ? 'pointer' : 'not-allowed',
-                  opacity: (isFirstContract || canCreateSubsequentContract) ? 1 : 0.6,
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                CREA CONTRATTO
-              </button>
-            </form>
-          </div>
-
-          {/* Tabella contratti */}
-          <div style={{
-            backgroundColor: colors.white,
-            borderRadius: '12px',
-            padding: '30px',
-            boxShadow: '0 8px 25px rgba(0,0,0,0.1)'
-          }}>
-            <h2 style={{
-              color: colors.navy,
-              fontSize: '1.4rem',
-              fontWeight: '700',
-              margin: '0 0 30px 0',
-              textAlign: 'center'
-            }}>
-              PORTAFOGLIO CONTRATTI
-            </h2>
-
-            {contracts.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '60px 20px',
-                color: colors.darkGray
-              }}>
-                <div style={{ fontSize: '3rem', marginBottom: '20px' }}>
-                  📊
-                </div>
-                <h3 style={{
-                  fontSize: '1.2rem',
-                  fontWeight: '600',
-                  margin: '0 0 10px 0'
-                }}>
-                  Nessun contratto attivo
-                </h3>
-                <p style={{ margin: '0', opacity: 0.8 }}>
-                  Crea il tuo primo contratto per iniziare
-                </p>
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse'
-                }}>
-                  <thead>
-                    <tr style={{
-                      borderBottom: `3px solid ${colors.navy}`
-                    }}>
-                      {['ID', 'Capitale', 'Durata', 'Ricavo %', 'Anni', 'Ricavi/Anno', 'Tot. Ricavi', 'Stato'].map(header => (
-                        <th key={header} style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          color: colors.navy,
-                          fontWeight: '700',
-                          fontSize: '0.8rem',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          {header}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contracts.map((contract, index) => (
-                      <tr
-                        key={contract.id}
-                        style={{
-                          borderBottom: `1px solid ${colors.lightGray}`,
-                          backgroundColor: index % 2 === 0 ? colors.lightGray : colors.white
-                        }}
-                      >
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          fontWeight: '700',
-                          color: colors.navy
-                        }}>
-                          #{contract.id}
-                        </td>
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          fontWeight: '600',
-                          color: colors.navy
-                        }}>
-                          {formatCurrency(contract.capital)}
-                        </td>
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          color: colors.darkGray
-                        }}>
-                          {contract.duration}a
-                        </td>
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          fontWeight: '700',
-                          color: colors.gold
-                        }}>
-                          {contract.ricavo}%
-                        </td>
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          fontWeight: '600',
-                          color: colors.success
-                        }}>
-                          {contract.anniTrascorsi}
-                        </td>
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          fontWeight: '600',
-                          color: colors.navy
-                        }}>
-                          {formatCurrency(contract.renditaAnnuale)}
-                        </td>
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center',
-                          fontWeight: '700',
-                          color: colors.gold
-                        }}>
-                          {formatCurrency(contract.ricaviTotali)}
-                        </td>
-                        <td style={{
-                          padding: '15px 10px',
-                          textAlign: 'center'
-                        }}>
-                          <span style={{
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            backgroundColor: contract.stato === 'Attivo' ? colors.success : colors.gold,
-                            color: colors.white
-                          }}>
-                            {contract.stato}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* DOCUMENTAZIONE DEI CAMPI */}
+      <div style={{ marginTop: 34, fontSize: 14, color: '#888' }}>
+        <hr style={{ margin: '16px 0' }} />
+        <ul>
+          <li><b>RESET</b>: Azzera tutto e ripartìsce da zero.</li>
+          <li><b>CAPITALE (nuovo contratto)</b>: massimo = rendite maturate, puoi abbassare manualmente.</li>
+          <li><b>Totale ricavi</b>: Somma di tutte le rendite generate dai contratti.</li>
+          <li><b>Totale che torna al cliente</b>: Ricavi maturati + capitale di ogni contratto, che viene restituito a fine contratto.</li>
+          <li><b>Tabella</b>: mostra i dettagli di ogni contratto (capitale, anni, % rendimento, rendita generata, totale finale).</li>
+        </ul>
       </div>
     </div>
   );
 }
+
+export default CalcolatoreMultiContratto;
