@@ -19,23 +19,15 @@ export default function ProfessionalGoldCalculator() {
   const [simulationYear, setSimulationYear] = useState(0);
   const [portfolioRendites, setPortfolioRendites] = useState(0);
 
-  // Theme colors
-  const theme = {
-    gold: '#D4AF37',
-    goldLight: '#F7E98E',
-    goldDark: '#B8941F',
-    white: '#FFFFFF',
-    dark: '#1A1A1A',
-    gray: '#F5F5F5',
-    grayMedium: '#CCCCCC',
-    grayDark: '#666666',
-    green: '#27AE60',
-    red: '#E74C3C',
-    blue: '#3498DB',
-    gradientGold: 'linear-gradient(135deg, #D4AF37 0%, #F7E98E 50%, #D4AF37 100%)',
-    gradientDark: 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
-    shadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
-    shadowHeavy: '0 20px 60px rgba(212, 175, 55, 0.2)'
+  // Colori professionali: Navy Blue + Gold + White
+  const colors = {
+    navy: '#1e3a8a',
+    gold: '#d4af37',
+    white: '#ffffff',
+    lightGray: '#f8fafc',
+    darkGray: '#64748b',
+    success: '#059669',
+    danger: '#dc2626'
   };
 
   const calculateAnnualReturn = (capital, rate) => {
@@ -81,7 +73,7 @@ export default function ProfessionalGoldCalculator() {
       ricavo,
       anniTrascorsi: 0,
       renditaAnnuale: calculateAnnualReturn(capital, ricavo),
-      renditeTotali: 0,
+      ricaviTotali: 0,
       stato: 'Attivo',
     };
 
@@ -107,7 +99,7 @@ export default function ProfessionalGoldCalculator() {
       return {
         ...contract,
         anniTrascorsi: newAnniTrascorsi,
-        renditeTotali: contract.renditeTotali + contract.renditaAnnuale,
+        ricaviTotali: contract.ricaviTotali + contract.renditaAnnuale,
         stato: newStatus,
       };
     });
@@ -137,233 +129,189 @@ export default function ProfessionalGoldCalculator() {
 
   const isFirstContract = contracts.length === 0;
   const canCreateSubsequentContract = !isFirstContract && portfolioRendites >= MIN_CAPITAL;
-  const totalInvested = contracts.reduce((sum, c) => sum + c.capital, 0);
-  const totalReturns = contracts.reduce((sum, c) => sum + c.renditeTotali, 0);
+  
+  // CAPITALE INIZIALE = Solo il primo deposito (primo contratto)
+  const capitaleIniziale = contracts.length > 0 ? contracts[0].capital : 0;
+  
+  // RICAVI TOTALI = Tutti i ricavi accumulati
+  const ricaviTotali = contracts.reduce((sum, c) => sum + c.ricaviTotali, 0);
+  
   const activeContracts = contracts.filter(c => c.stato === 'Attivo').length;
   const completedContracts = contracts.filter(c => c.stato === 'Completato').length;
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: theme.gradientDark,
-      padding: '20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      color: theme.white
+      backgroundColor: colors.navy,
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
     }}>
-      <style>
-        {`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-          }
-          @keyframes slideIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.6); }
-          }
-        `}
-      </style>
+      {/* Header */}
+      <div style={{
+        backgroundColor: colors.navy,
+        padding: '40px 20px',
+        textAlign: 'center',
+        borderBottom: `4px solid ${colors.gold}`
+      }}>
+        <h1 style={{
+          color: colors.white,
+          fontSize: '2.5rem',
+          fontWeight: '700',
+          margin: '0 0 12px 0',
+          letterSpacing: '-0.5px'
+        }}>
+          GOLD INVESTMENT CALCULATOR
+        </h1>
+        <p style={{
+          color: colors.gold,
+          fontSize: '1.1rem',
+          margin: '0',
+          fontWeight: '500'
+        }}>
+          Simulazione professionale di investimenti in oro • Anno {simulationYear}
+        </p>
+      </div>
 
       <div style={{
-        maxWidth: '1400px',
+        maxWidth: '1200px',
         margin: '0 auto',
-        animation: 'slideIn 0.8s ease-out'
+        padding: '40px 20px'
       }}>
-        {/* Header */}
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '40px',
-          padding: '20px'
-        }}>
-          <h1 style={{
-            fontSize: 'clamp(2.5rem, 5vw, 4rem)',
-            background: theme.gradientGold,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            margin: '0 0 16px 0',
-            fontWeight: '800',
-            letterSpacing: '-0.02em',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-          }}>
-            🏆 GOLD INVESTMENT CALCULATOR 🏆
-          </h1>
-          <p style={{
-            fontSize: '1.3rem',
-            margin: '0',
-            opacity: '0.9',
-            fontWeight: '300',
-            color: theme.goldLight
-          }}>
-            Calcola e simula i rendimenti dei tuoi investimenti in oro
-          </p>
-        </div>
-
-        {/* Dashboard */}
+        {/* Dashboard principale */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '24px',
-          marginBottom: '40px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '30px',
+          marginBottom: '50px'
         }}>
-          {/* Portfolio Value */}
+          {/* Capitale Iniziale - Solo primo deposito */}
           <div style={{
-            background: theme.white,
-            borderRadius: '24px',
-            padding: '32px',
-            boxShadow: theme.shadowHeavy,
-            border: `3px solid ${theme.gold}`,
-            position: 'relative',
-            overflow: 'hidden',
-            transform: 'translateY(0)',
-            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            backgroundColor: colors.white,
+            borderRadius: '12px',
+            padding: '30px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+            border: `2px solid ${colors.lightGray}`,
+            textAlign: 'center'
           }}>
-            <div style={{
-              position: 'absolute',
-              top: '-20px',
-              right: '-20px',
-              width: '100px',
-              height: '100px',
-              background: theme.gradientGold,
-              borderRadius: '50%',
-              opacity: '0.1'
-            }} />
             <h3 style={{
-              margin: '0 0 16px 0',
-              color: theme.grayDark,
-              fontSize: '14px',
-              fontWeight: '700',
+              color: colors.darkGray,
+              fontSize: '0.9rem',
+              fontWeight: '600',
               textTransform: 'uppercase',
-              letterSpacing: '1px'
+              letterSpacing: '1px',
+              margin: '0 0 16px 0'
             }}>
-              💰 PORTAFOGLIO RENDITE
+              CAPITALE INIZIALE
             </h3>
             <div style={{
-              fontSize: 'clamp(2rem, 4vw, 3.2rem)',
-              fontWeight: '900',
-              color: theme.green,
-              margin: '0 0 8px 0',
-              textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
+              fontSize: '2.2rem',
+              fontWeight: '700',
+              color: colors.navy,
+              margin: '0'
             }}>
-              {formatCurrency(portfolioRendites)}
+              {formatCurrency(capitaleIniziale)}
             </div>
-            <div style={{
-              color: theme.grayDark,
-              fontSize: '16px',
-              fontWeight: '600'
+            <p style={{
+              color: colors.darkGray,
+              fontSize: '0.85rem',
+              margin: '8px 0 0 0',
+              fontWeight: '500'
             }}>
-              Disponibile per nuovi contratti
-            </div>
+              Il tuo primo investimento
+            </p>
           </div>
 
-          {/* Contracts Summary */}
+          {/* RICAVI TOTALI - Focus principale */}
           <div style={{
-            background: theme.white,
-            borderRadius: '24px',
-            padding: '32px',
-            boxShadow: theme.shadowHeavy,
-            border: `3px solid ${theme.gold}`,
-            transform: 'translateY(0)',
-            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            backgroundColor: colors.gold,
+            borderRadius: '12px',
+            padding: '30px',
+            boxShadow: '0 12px 35px rgba(212,175,55,0.3)',
+            textAlign: 'center',
+            transform: 'scale(1.02)',
+            border: `3px solid ${colors.gold}`
           }}>
             <h3 style={{
-              margin: '0 0 16px 0',
-              color: theme.grayDark,
-              fontSize: '14px',
+              color: colors.white,
+              fontSize: '0.9rem',
               fontWeight: '700',
               textTransform: 'uppercase',
-              letterSpacing: '1px'
+              letterSpacing: '1px',
+              margin: '0 0 16px 0'
             }}>
-              📋 CONTRATTI ATTIVI
+              💰 RICAVI TOTALI
             </h3>
+            <div style={{
+              fontSize: '2.8rem',
+              fontWeight: '800',
+              color: colors.white,
+              margin: '0',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
+            }}>
+              {formatCurrency(ricaviTotali)}
+            </div>
+            <p style={{
+              color: colors.white,
+              fontSize: '0.9rem',
+              margin: '8px 0 0 0',
+              fontWeight: '600',
+              opacity: 0.9
+            }}>
+              Il tuo guadagno totale
+            </p>
+          </div>
+
+          {/* Contratti Attivi */}
+          <div style={{
+            backgroundColor: colors.white,
+            borderRadius: '12px',
+            padding: '30px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+            border: `2px solid ${colors.lightGray}`,
+            textAlign: 'center'
+          }}>
+            <h3 style={{
+              color: colors.darkGray,
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              margin: '0 0 16px 0'
+            }}>
+              CONTRATTI IN ESSERE
+            </h3>
+            <div style={{
+              fontSize: '2.2rem',
+              fontWeight: '700',
+              color: colors.success,
+              margin: '0 0 12px 0'
+            }}>
+              {contracts.length}
+            </div>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px'
+              fontSize: '0.85rem',
+              fontWeight: '600'
             }}>
-              <div style={{
-                fontSize: 'clamp(2rem, 4vw, 3.2rem)',
-                fontWeight: '900',
-                color: theme.blue,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
-              }}>
-                {contracts.length}
-              </div>
-              <div style={{
-                textAlign: 'right'
-              }}>
-                <div style={{ color: theme.green, fontSize: '18px', fontWeight: '700' }}>
-                  ✅ {activeContracts} Attivi
-                </div>
-                <div style={{ color: theme.gold, fontSize: '18px', fontWeight: '700' }}>
-                  🏆 {completedContracts} Completati
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Investment */}
-          <div style={{
-            background: theme.white,
-            borderRadius: '24px',
-            padding: '32px',
-            boxShadow: theme.shadowHeavy,
-            border: `3px solid ${theme.gold}`,
-            transform: 'translateY(0)',
-            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-          }}>
-            <h3 style={{
-              margin: '0 0 16px 0',
-              color: theme.grayDark,
-              fontSize: '14px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>
-              💎 CAPITALE INVESTITO
-            </h3>
-            <div style={{
-              fontSize: 'clamp(2rem, 4vw, 3.2rem)',
-              fontWeight: '900',
-              color: theme.gold,
-              margin: '0 0 8px 0',
-              textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
-            }}>
-              {formatCurrency(totalInvested)}
-            </div>
-            <div style={{
-              color: totalReturns >= 0 ? theme.green : theme.red,
-              fontSize: '16px',
-              fontWeight: '700'
-            }}>
-              {totalReturns >= 0 ? '📈 +' : '📉 '}{formatCurrency(totalReturns)} rendite
+              <span style={{ color: colors.success }}>
+                {activeContracts} Attivi
+              </span>
+              <span style={{ color: colors.gold }}>
+                {completedContracts} Completati
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Year Counter and Controls */}
+        {/* Controlli simulazione */}
         <div style={{
-          background: theme.white,
-          borderRadius: '24px',
-          padding: '32px',
-          boxShadow: theme.shadowHeavy,
-          border: `3px solid ${theme.gold}`,
-          textAlign: 'center',
-          marginBottom: '40px'
+          backgroundColor: colors.white,
+          borderRadius: '12px',
+          padding: '30px',
+          boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+          marginBottom: '40px',
+          textAlign: 'center'
         }}>
-          <h2 style={{
-            margin: '0 0 24px 0',
-            color: theme.dark,
-            fontSize: '2rem',
-            fontWeight: '800'
-          }}>
-            🕐 Anno di Simulazione: <span style={{ color: theme.gold }}>{simulationYear}</span>
-          </h2>
-          
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -374,41 +322,33 @@ export default function ProfessionalGoldCalculator() {
               onClick={simulateNextYear}
               disabled={contracts.length === 0}
               style={{
-                padding: '16px 32px',
-                background: contracts.length > 0 ? theme.gradientGold : theme.grayMedium,
+                backgroundColor: contracts.length > 0 ? colors.gold : colors.darkGray,
+                color: colors.white,
                 border: 'none',
-                borderRadius: '50px',
-                color: theme.white,
-                fontSize: '18px',
-                fontWeight: '700',
+                borderRadius: '8px',
+                padding: '15px 30px',
+                fontSize: '1rem',
+                fontWeight: '600',
                 cursor: contracts.length > 0 ? 'pointer' : 'not-allowed',
-                transition: 'all 0.3s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                boxShadow: theme.shadow,
-                transform: 'scale(1)',
-                opacity: contracts.length > 0 ? 1 : 0.5
+                opacity: contracts.length > 0 ? 1 : 0.6,
+                transition: 'all 0.2s ease'
               }}
             >
-              ⏭️ Simula Anno Successivo
+              ▶ Simula Anno Successivo
             </button>
-
+            
             <button
               onClick={resetAll}
               style={{
-                padding: '16px 32px',
-                background: theme.red,
+                backgroundColor: colors.danger,
+                color: colors.white,
                 border: 'none',
-                borderRadius: '50px',
-                color: theme.white,
-                fontSize: '18px',
-                fontWeight: '700',
+                borderRadius: '8px',
+                padding: '15px 30px',
+                fontSize: '1rem',
+                fontWeight: '600',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                boxShadow: theme.shadow,
-                transform: 'scale(1)'
+                transition: 'all 0.2s ease'
               }}
             >
               🔄 Reset Totale
@@ -418,133 +358,108 @@ export default function ProfessionalGoldCalculator() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(320px, 450px) 1fr',
+          gridTemplateColumns: '400px 1fr',
           gap: '40px',
           alignItems: 'start'
         }}>
-          {/* Contract Creation Form */}
+          {/* Form creazione contratto */}
           <div style={{
-            background: theme.white,
-            borderRadius: '24px',
-            padding: '40px',
-            boxShadow: theme.shadowHeavy,
-            border: `3px solid ${theme.gold}`,
+            backgroundColor: colors.white,
+            borderRadius: '12px',
+            padding: '30px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
             position: 'sticky',
             top: '20px'
           }}>
             <h2 style={{
-              margin: '0 0 32px 0',
-              color: theme.dark,
-              fontSize: '2rem',
-              fontWeight: '800',
+              color: colors.navy,
+              fontSize: '1.4rem',
+              fontWeight: '700',
+              margin: '0 0 30px 0',
               textAlign: 'center'
             }}>
-              ✨ {isFirstContract ? 'Primo Contratto' : 'Nuovo Contratto'}
+              {isFirstContract ? 'PRIMO CONTRATTO' : 'NUOVO CONTRATTO'}
             </h2>
 
-            {!isFirstContract && (
-              <div style={{
-                background: theme.goldLight,
-                padding: '16px',
-                borderRadius: '12px',
-                marginBottom: '24px',
-                textAlign: 'center',
-                color: theme.dark,
-                fontWeight: '600'
-              }}>
-                💡 Usa le rendite accumulate per finanziare questo investimento
-              </div>
-            )}
-
             <form onSubmit={createContract}>
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '25px' }}>
                 <label style={{
                   display: 'block',
                   marginBottom: '8px',
-                  color: theme.dark,
-                  fontWeight: '700',
-                  fontSize: '16px'
+                  color: colors.navy,
+                  fontWeight: '600',
+                  fontSize: '0.9rem'
                 }}>
-                  💰 Capitale (€)
+                  CAPITALE (€)
                 </label>
                 <input
                   type="number"
                   min={MIN_CAPITAL}
-                  step="100"
-                  placeholder={isFirstContract ? `Minimo ${MIN_CAPITAL.toLocaleString()}€` : `Max ${portfolioRendites.toLocaleString()}€`}
+                  step="1000"
+                  placeholder={`Min. ${MIN_CAPITAL.toLocaleString()}€`}
                   value={formData.capital}
                   onChange={(e) => setFormData({ ...formData, capital: e.target.value })}
                   disabled={!isFirstContract && !canCreateSubsequentContract}
                   style={{
                     width: '100%',
-                    padding: '16px 20px',
-                    border: `3px solid ${errors.capital ? theme.red : theme.gold}`,
-                    borderRadius: '12px',
-                    fontSize: '18px',
+                    padding: '12px',
+                    border: `2px solid ${errors.capital ? colors.danger : colors.lightGray}`,
+                    borderRadius: '8px',
+                    fontSize: '1rem',
                     fontWeight: '600',
-                    transition: 'all 0.3s ease',
-                    backgroundColor: theme.gray,
-                    color: theme.dark,
+                    backgroundColor: colors.lightGray,
+                    color: colors.navy,
                     outline: 'none',
-                    boxSizing: 'border-box',
-                    opacity: (!isFirstContract && !canCreateSubsequentContract) ? 0.5 : 1
+                    boxSizing: 'border-box'
                   }}
                 />
                 {errors.capital && (
                   <p style={{
-                    color: theme.red,
-                    fontSize: '14px',
-                    margin: '8px 0 0 0',
-                    fontWeight: '600'
+                    color: colors.danger,
+                    fontSize: '0.8rem',
+                    margin: '5px 0 0 0',
+                    fontWeight: '500'
                   }}>
-                    ⚠️ {errors.capital}
+                    {errors.capital}
                   </p>
                 )}
               </div>
 
-              <div style={{ marginBottom: '32px' }}>
+              <div style={{ marginBottom: '30px' }}>
                 <label style={{
                   display: 'block',
-                  marginBottom: '16px',
-                  color: theme.dark,
-                  fontWeight: '700',
-                  fontSize: '16px'
+                  marginBottom: '12px',
+                  color: colors.navy,
+                  fontWeight: '600',
+                  fontSize: '0.9rem'
                 }}>
-                  ⏱️ Durata e Rendimento
+                  DURATA E RENDIMENTO
                 </label>
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  gap: '12px'
+                  gap: '10px'
                 }}>
                   {Object.entries(DURATION_RATES).map(([years, rate]) => (
                     <div
                       key={years}
                       onClick={() => setFormData(prev => ({ ...prev, duration: years }))}
                       style={{
-                        padding: '16px 12px',
-                        borderRadius: '12px',
-                        border: `3px solid ${formData.duration === years ? theme.gold : theme.grayMedium}`,
-                        backgroundColor: formData.duration === years ? `${theme.gold}20` : theme.gray,
+                        padding: '15px 10px',
+                        borderRadius: '8px',
+                        border: `2px solid ${formData.duration === years ? colors.gold : colors.lightGray}`,
+                        backgroundColor: formData.duration === years ? colors.gold : colors.white,
+                        color: formData.duration === years ? colors.white : colors.navy,
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
                         textAlign: 'center',
-                        transform: 'scale(1)'
+                        transition: 'all 0.2s ease',
+                        fontWeight: '600'
                       }}
                     >
-                      <div style={{
-                        fontSize: '20px',
-                        fontWeight: '800',
-                        color: theme.dark,
-                        marginBottom: '4px'
-                      }}>
+                      <div style={{ fontSize: '1rem', marginBottom: '4px' }}>
                         {years} anni
                       </div>
-                      <div style={{
-                        fontSize: '16px',
-                        fontWeight: '700',
-                        color: theme.gold
-                      }}>
+                      <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
                         {rate}% annuo
                       </div>
                     </div>
@@ -552,12 +467,12 @@ export default function ProfessionalGoldCalculator() {
                 </div>
                 {errors.duration && (
                   <p style={{
-                    color: theme.red,
-                    fontSize: '14px',
-                    margin: '12px 0 0 0',
-                    fontWeight: '600'
+                    color: colors.danger,
+                    fontSize: '0.8rem',
+                    margin: '8px 0 0 0',
+                    fontWeight: '500'
                   }}>
-                    ⚠️ {errors.duration}
+                    {errors.duration}
                   </p>
                 )}
               </div>
@@ -567,100 +482,79 @@ export default function ProfessionalGoldCalculator() {
                 disabled={!isFirstContract && !canCreateSubsequentContract}
                 style={{
                   width: '100%',
-                  padding: '20px',
-                  background: (isFirstContract || canCreateSubsequentContract) ? theme.gradientGold : theme.grayMedium,
+                  padding: '15px',
+                  backgroundColor: (isFirstContract || canCreateSubsequentContract) ? colors.navy : colors.darkGray,
+                  color: colors.white,
                   border: 'none',
-                  borderRadius: '50px',
-                  color: theme.white,
-                  fontSize: '18px',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
                   fontWeight: '700',
                   cursor: (isFirstContract || canCreateSubsequentContract) ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.3s ease',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  boxShadow: theme.shadow,
-                  opacity: (isFirstContract || canCreateSubsequentContract) ? 1 : 0.5,
-                  transform: 'translateY(0)'
+                  opacity: (isFirstContract || canCreateSubsequentContract) ? 1 : 0.6,
+                  transition: 'all 0.2s ease'
                 }}
               >
-                🚀 {isFirstContract ? 'Crea Primo Contratto' : 'Crea con Rendite'}
+                CREA CONTRATTO
               </button>
-
-              {!isFirstContract && !canCreateSubsequentContract && portfolioRendites > 0 && (
-                <p style={{
-                  color: '#F39C12',
-                  fontSize: '14px',
-                  margin: '16px 0 0 0',
-                  textAlign: 'center',
-                  fontWeight: '600'
-                }}>
-                  💡 Accumula almeno {formatCurrency(MIN_CAPITAL)} di rendite per creare un altro contratto
-                </p>
-              )}
             </form>
           </div>
 
-          {/* Contracts Table */}
+          {/* Tabella contratti */}
           <div style={{
-            background: theme.white,
-            borderRadius: '24px',
-            padding: '40px',
-            boxShadow: theme.shadowHeavy,
-            border: `3px solid ${theme.gold}`
+            backgroundColor: colors.white,
+            borderRadius: '12px',
+            padding: '30px',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.1)'
           }}>
             <h2 style={{
-              margin: '0 0 32px 0',
-              color: theme.dark,
-              fontSize: '2rem',
-              fontWeight: '800',
+              color: colors.navy,
+              fontSize: '1.4rem',
+              fontWeight: '700',
+              margin: '0 0 30px 0',
               textAlign: 'center'
             }}>
-              📊 Riepilogo Contratti
+              PORTAFOGLIO CONTRATTI
             </h2>
 
             {contracts.length === 0 ? (
               <div style={{
                 textAlign: 'center',
-                padding: '80px 20px',
-                color: theme.grayDark
+                padding: '60px 20px',
+                color: colors.darkGray
               }}>
-                <div style={{ fontSize: '4rem', marginBottom: '24px' }}>
-                  📈
+                <div style={{ fontSize: '3rem', marginBottom: '20px' }}>
+                  📊
                 </div>
                 <h3 style={{
-                  margin: '0 0 16px 0',
-                  fontSize: '1.5rem',
-                  fontWeight: '700'
+                  fontSize: '1.2rem',
+                  fontWeight: '600',
+                  margin: '0 0 10px 0'
                 }}>
                   Nessun contratto attivo
                 </h3>
-                <p style={{
-                  margin: '0',
-                  fontSize: '16px',
-                  opacity: 0.8
-                }}>
-                  Crea il tuo primo contratto di investimento in oro per iniziare
+                <p style={{ margin: '0', opacity: 0.8 }}>
+                  Crea il tuo primo contratto per iniziare
                 </p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{
                   width: '100%',
-                  borderCollapse: 'separate',
-                  borderSpacing: '0 12px'
+                  borderCollapse: 'collapse'
                 }}>
                   <thead>
-                    <tr>
-                      {['ID', 'Capitale', 'Durata', 'Ricavo %', 'Anni', 'Rendita/Anno', 'Tot. Rendite', 'Stato'].map(header => (
+                    <tr style={{
+                      borderBottom: `3px solid ${colors.navy}`
+                    }}>
+                      {['ID', 'Capitale', 'Durata', 'Ricavo %', 'Anni', 'Ricavi/Anno', 'Tot. Ricavi', 'Stato'].map(header => (
                         <th key={header} style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          color: theme.grayDark,
+                          color: colors.navy,
                           fontWeight: '700',
-                          fontSize: '14px',
+                          fontSize: '0.8rem',
                           textTransform: 'uppercase',
-                          letterSpacing: '1px',
-                          borderBottom: `3px solid ${theme.gold}`
+                          letterSpacing: '0.5px'
                         }}>
                           {header}
                         </th>
@@ -668,91 +562,80 @@ export default function ProfessionalGoldCalculator() {
                     </tr>
                   </thead>
                   <tbody>
-                    {contracts.map((contract) => (
+                    {contracts.map((contract, index) => (
                       <tr
                         key={contract.id}
                         style={{
-                          backgroundColor: theme.gray,
-                          borderRadius: '16px',
-                          transition: 'all 0.3s ease'
+                          borderBottom: `1px solid ${colors.lightGray}`,
+                          backgroundColor: index % 2 === 0 ? colors.lightGray : colors.white
                         }}
                       >
                         <td style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          fontSize: '16px',
-                          fontWeight: '800',
-                          color: theme.dark,
-                          borderRadius: '16px 0 0 16px'
+                          fontWeight: '700',
+                          color: colors.navy
                         }}>
                           #{contract.id}
                         </td>
                         <td style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          fontSize: '16px',
-                          fontWeight: '700',
-                          color: theme.gold
+                          fontWeight: '600',
+                          color: colors.navy
                         }}>
                           {formatCurrency(contract.capital)}
                         </td>
                         <td style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: theme.dark
+                          color: colors.darkGray
                         }}>
-                          {contract.duration} anni
+                          {contract.duration}a
                         </td>
                         <td style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          fontSize: '16px',
                           fontWeight: '700',
-                          color: theme.blue
+                          color: colors.gold
                         }}>
                           {contract.ricavo}%
                         </td>
                         <td style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          fontSize: '16px',
-                          fontWeight: '700',
-                          color: theme.green
+                          fontWeight: '600',
+                          color: colors.success
                         }}>
                           {contract.anniTrascorsi}
                         </td>
                         <td style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          fontSize: '16px',
-                          fontWeight: '700',
-                          color: theme.dark
+                          fontWeight: '600',
+                          color: colors.navy
                         }}>
                           {formatCurrency(contract.renditaAnnuale)}
                         </td>
                         <td style={{
-                          padding: '20px 16px',
+                          padding: '15px 10px',
                           textAlign: 'center',
-                          fontSize: '16px',
                           fontWeight: '700',
-                          color: theme.green
+                          color: colors.gold
                         }}>
-                          {formatCurrency(contract.renditeTotali)}
+                          {formatCurrency(contract.ricaviTotali)}
                         </td>
                         <td style={{
-                          padding: '20px 16px',
-                          textAlign: 'center',
-                          borderRadius: '0 16px 16px 0'
+                          padding: '15px 10px',
+                          textAlign: 'center'
                         }}>
                           <span style={{
-                            padding: '8px 16px',
+                            padding: '6px 12px',
                             borderRadius: '20px',
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            backgroundColor: contract.stato === 'Attivo' ? theme.green : theme.gold,
-                            color: theme.white
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            backgroundColor: contract.stato === 'Attivo' ? colors.success : colors.gold,
+                            color: colors.white
                           }}>
                             {contract.stato}
                           </span>
