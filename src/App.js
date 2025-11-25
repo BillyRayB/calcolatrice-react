@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// Configurazioni
 const DURATIONS = [
   { years: 1, rate: 0.08 },
   { years: 2, rate: 0.10 },
@@ -10,6 +9,7 @@ const DURATIONS = [
 ];
 
 const MIN_CAPITAL = 5000;
+
 const colors = {
   navy: '#1a365d',
   gold: '#d4af37',
@@ -30,10 +30,12 @@ export default function ProfessionalGoldCalculator() {
   const portfolioCapital = contracts.reduce((sum, c) => sum + c.capital, 0);
   const portfolioRendites = contracts.reduce((sum, c) => sum + c.ricaviTotali, 0);
   const canCreateSubsequentContract = portfolioRendites >= MIN_CAPITAL;
+  const ricaviTotali = contracts.reduce((sum, c) => sum + c.ricaviTotali, 0);
 
-  // NUOVO: Calcolo totale che torna al cliente
+  // Calcolo totale che torna al cliente (ricavi + capitale restituito dai contratti completati)
   const totaleCheTornaAlCliente = contracts.reduce((sum, c) => {
-    return sum + c.ricaviTotali + (c.stato === 'Completato' ? c.capital : 0);
+    const capitaleRestituito = c.stato === 'Completato' ? c.capital : 0;
+    return sum + c.ricaviTotali + capitaleRestituito;
   }, 0);
 
   const validateForm = () => {
@@ -64,7 +66,6 @@ export default function ProfessionalGoldCalculator() {
     const duration = parseInt(formData.duration);
     const rate = DURATIONS.find(d => d.years === duration).rate;
     const ricaviAnnuali = capital * rate;
-    const ricaviTotali = ricaviAnnuali * duration;
 
     const newContract = {
       id: Date.now(),
@@ -72,9 +73,9 @@ export default function ProfessionalGoldCalculator() {
       duration,
       rate: rate * 100,
       ricaviAnnuali,
-      ricaviTotali,
+      ricaviTotali: 0,
+      anniTrascorsi: 0,
       annoInizio: simulationYear,
-      annoFine: simulationYear + duration - 1,
       stato: 'Attivo'
     };
 
@@ -85,10 +86,21 @@ export default function ProfessionalGoldCalculator() {
 
   const simulateYear = () => {
     setSimulationYear(prev => prev + 1);
-    setContracts(prev => prev.map(contract => ({
-      ...contract,
-      stato: simulationYear >= contract.annoFine ? 'Completato' : contract.stato
-    })));
+    
+    setContracts(prev => prev.map(contract => {
+      if (contract.stato === 'Completato') return contract;
+
+      const newAnniTrascorsi = contract.anniTrascorsi + 1;
+      const newRicaviTotali = contract.ricaviTotali + contract.ricaviAnnuali;
+      const isCompleted = newAnniTrascorsi >= contract.duration;
+
+      return {
+        ...contract,
+        anniTrascorsi: newAnniTrascorsi,
+        ricaviTotali: newRicaviTotali,
+        stato: isCompleted ? 'Completato' : 'Attivo'
+      };
+    }));
   };
 
   const resetAll = () => {
@@ -106,7 +118,7 @@ export default function ProfessionalGoldCalculator() {
       backgroundColor: colors.navy,
       fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
     }}>
-      {/* PULSANTE RESET - MODIFICATO: rosso chiaro, in alto a destra */}
+      {/* PULSANTE RESET - rosso chiaro, in alto a destra */}
       <button 
         onClick={resetAll}
         style={{
@@ -203,7 +215,7 @@ export default function ProfessionalGoldCalculator() {
               TOTALE RICAVI
             </h3>
             <p style={{ color: colors.success, fontSize: '2rem', fontWeight: '700', margin: '0' }}>
-              {formatCurrency(portfolioRendites)}
+              {formatCurrency(ricaviTotali)}
             </p>
           </div>
 
@@ -233,7 +245,7 @@ export default function ProfessionalGoldCalculator() {
           gap: '40px',
           alignItems: 'start'
         }}>
-          {/* Form creazione contratto - MODIFICATO: mostra massimo utilizzabile */}
+          {/* Form creazione contratto */}
           <div style={{
             backgroundColor: colors.white,
             borderRadius: '12px',
@@ -262,7 +274,6 @@ export default function ProfessionalGoldCalculator() {
                   fontSize: '0.9rem'
                 }}>
                   CAPITALE (€)
-                  {/* MODIFICATO: mostra massimo utilizzabile */}
                   {!isFirstContract && (
                     <span style={{ 
                       color: colors.darkGray, 
@@ -382,6 +393,21 @@ export default function ProfessionalGoldCalculator() {
                 {isFirstContract ? 'CREA PRIMO CONTRATTO' : 'AGGIUNGI CONTRATTO'}
               </button>
             </form>
+
+            {!isFirstContract && !canCreateSubsequentContract && (
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffeaa7',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                color: '#856404',
+                textAlign: 'center'
+              }}>
+                💡 <strong>Simula qualche anno</strong> per accumulare rendite e creare nuovi contratti
+              </div>
+            )}
           </div>
 
           {/* Portafoglio contratti */}
@@ -407,18 +433,20 @@ export default function ProfessionalGoldCalculator() {
               </h2>
               <button
                 onClick={simulateYear}
+                disabled={contracts.length === 0}
                 style={{
-                  backgroundColor: colors.success,
+                  backgroundColor: contracts.length === 0 ? colors.darkGray : colors.success,
                   color: colors.white,
                   border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '6px',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: '700',
+                  cursor: contracts.length === 0 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s'
                 }}
               >
-                ⏭ SIMULA ANNO
+                ⏭ SIMULA ANNO SUCCESSIVO
               </button>
             </div>
 
@@ -426,73 +454,109 @@ export default function ProfessionalGoldCalculator() {
               <div style={{
                 textAlign: 'center',
                 color: colors.darkGray,
-                padding: '50px 20px',
+                padding: '60px 20px',
                 fontSize: '1.1rem'
               }}>
-                Nessun contratto attivo
+                <p style={{ margin: '0 0 10px 0', fontSize: '3rem' }}>📊</p>
+                <p style={{ margin: '0' }}>Nessun contratto attivo</p>
+                <p style={{ margin: '10px 0 0 0', fontSize: '0.9rem', opacity: 0.7 }}>
+                  Crea il tuo primo contratto per iniziare
+                </p>
               </div>
             ) : (
-              <div style={{
-                overflowX: 'auto'
-              }}>
+              <div style={{ overflowX: 'auto' }}>
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse'
                 }}>
                   <thead>
                     <tr style={{ backgroundColor: colors.lightGray }}>
-                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '0.9rem', fontWeight: '600' }}>
+                      <th style={{ padding: '15px', textAlign: 'left', fontSize: '0.9rem', fontWeight: '700' }}>
                         CAPITALE
                       </th>
-                      <th style={{ padding: '12px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '600' }}>
+                      <th style={{ padding: '15px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '700' }}>
                         DURATA
                       </th>
-                      <th style={{ padding: '12px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '600' }}>
+                      <th style={{ padding: '15px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '700' }}>
+                        ANNI TRASCORSI
+                      </th>
+                      <th style={{ padding: '15px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '700' }}>
                         TASSO
                       </th>
-                      <th style={{ padding: '12px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '600' }}>
-                        RICAVI ANNUALI
-                      </th>
-                      <th style={{ padding: '12px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '600' }}>
+                      <th style={{ padding: '15px', textAlign: 'right', fontSize: '0.9rem', fontWeight: '700' }}>
                         RICAVI TOTALI
                       </th>
-                      <th style={{ padding: '12px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '600' }}>
+                      <th style={{ padding: '15px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '700' }}>
+                        PROGRESSO
+                      </th>
+                      <th style={{ padding: '15px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '700' }}>
                         STATO
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {contracts.map((contract) => (
-                      <tr key={contract.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '15px', fontWeight: '600', color: colors.navy }}>
-                          {formatCurrency(contract.capital)}
-                        </td>
-                        <td style={{ padding: '15px', textAlign: 'center' }}>
-                          {contract.duration} {contract.duration === 1 ? 'anno' : 'anni'}
-                        </td>
-                        <td style={{ padding: '15px', textAlign: 'center', color: colors.gold, fontWeight: '600' }}>
-                          {contract.rate.toFixed(0)}%
-                        </td>
-                        <td style={{ padding: '15px', textAlign: 'right', color: colors.success, fontWeight: '600' }}>
-                          {formatCurrency(contract.ricaviAnnuali)}
-                        </td>
-                        <td style={{ padding: '15px', textAlign: 'right', color: colors.success, fontWeight: '700' }}>
-                          {formatCurrency(contract.ricaviTotali)}
-                        </td>
-                        <td style={{ padding: '15px', textAlign: 'center' }}>
-                          <span style={{
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '0.8rem',
-                            fontWeight: '600',
-                            backgroundColor: contract.stato === 'Attivo' ? '#e6fffa' : '#f0fff4',
-                            color: contract.stato === 'Attivo' ? '#38a169' : '#2d3748'
-                          }}>
-                            {contract.stato}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {contracts.map((contract) => {
+                      const progressPercentage = (contract.anniTrascorsi / contract.duration) * 100;
+                      return (
+                        <tr key={contract.id} style={{ 
+                          borderBottom: '1px solid #e2e8f0',
+                          backgroundColor: contract.stato === 'Completato' ? '#f0fff4' : 'transparent'
+                        }}>
+                          <td style={{ padding: '20px', fontWeight: '700', color: colors.navy }}>
+                            {formatCurrency(contract.capital)}
+                          </td>
+                          <td style={{ padding: '20px', textAlign: 'center' }}>
+                            {contract.duration} {contract.duration === 1 ? 'anno' : 'anni'}
+                          </td>
+                          <td style={{ padding: '20px', textAlign: 'center', fontWeight: '600' }}>
+                            {contract.anniTrascorsi} / {contract.duration}
+                          </td>
+                          <td style={{ padding: '20px', textAlign: 'center', color: colors.gold, fontWeight: '600' }}>
+                            {contract.rate.toFixed(0)}%
+                          </td>
+                          <td style={{ padding: '20px', textAlign: 'right', color: colors.success, fontWeight: '700', fontSize: '1.1rem' }}>
+                            {formatCurrency(contract.ricaviTotali)}
+                          </td>
+                          <td style={{ padding: '20px', textAlign: 'center' }}>
+                            <div style={{
+                              width: '100px',
+                              height: '8px',
+                              backgroundColor: '#e2e8f0',
+                              borderRadius: '4px',
+                              margin: '0 auto',
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                width: `${progressPercentage}%`,
+                                height: '100%',
+                                backgroundColor: contract.stato === 'Completato' ? colors.success : colors.gold,
+                                transition: 'width 0.5s ease'
+                              }} />
+                            </div>
+                            <div style={{ 
+                              fontSize: '0.8rem', 
+                              marginTop: '4px', 
+                              color: colors.darkGray,
+                              fontWeight: '600'
+                            }}>
+                              {Math.round(progressPercentage)}%
+                            </div>
+                          </td>
+                          <td style={{ padding: '20px', textAlign: 'center' }}>
+                            <span style={{
+                              padding: '6px 16px',
+                              borderRadius: '20px',
+                              fontSize: '0.85rem',
+                              fontWeight: '600',
+                              backgroundColor: contract.stato === 'Attivo' ? '#e6fffa' : '#f0fff4',
+                              color: contract.stato === 'Attivo' ? '#38a169' : '#2d3748'
+                            }}>
+                              {contract.stato}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
