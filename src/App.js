@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 
 const DURATIONS = [
-  { years: 1, rate: 0.08 },
-  { years: 2, rate: 0.10 },
-  { years: 3, rate: 0.12 },
-  { years: 4, rate: 0.15 },
-  { years: 5, rate: 0.18 }
+  { years: 3, rate: 0.09 },
+  { years: 5, rate: 0.12 },
+  { years: 8, rate: 0.13 },
+  { years: 10, rate: 0.14 },
+  { years: 12, rate: 0.15 },
+  { years: 15, rate: 0.16 }
 ];
 
 const MIN_CAPITAL = 5000;
